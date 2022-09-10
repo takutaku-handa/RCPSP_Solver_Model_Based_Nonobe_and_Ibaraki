@@ -1,16 +1,65 @@
-# これはサンプルの Python スクリプトです。
-
-# Shift+F10 を押して実行するか、ご自身のコードに置き換えてください。
-# Shift を2回押す を押すと、クラス/ファイル/ツールウィンドウ/アクション/設定を検索します。
+import numpy as np
 
 
-def print_hi(name):
-    # スクリプトをデバッグするには以下のコード行でブレークポイントを使用してください。
-    print(f'Hi, {name}')  # Ctrl+F8を押すとブレークポイントを切り替えます。
+class Resource:
+    def __init__(self, name="unknown resource"):
+        self.name = name
+        self.max = None
+
+    def setMax(self, res_max):
+        self.max = res_max
 
 
-# ガター内の緑色のボタンを押すとスクリプトを実行します。
-if __name__ == '__main__':
-    print_hi('PyCharm')
+class Mode:
+    def __init__(self, name="unknown mode"):
+        self.name = name
+        self.resource = None
 
-# PyCharm のヘルプは https://www.jetbrains.com/help/pycharm/ を参照してください
+    def setResource(self, res_array):
+        self.resource = res_array
+
+
+class Job:
+    def __init__(self, name="unknown job"):
+        self.name = name
+        self.modes = []
+        self.setup = None
+
+    def addMode(self, mode):
+        self.modes.append(mode)
+
+    def setSetup(self, job):
+        self.setup = job
+
+
+class Precedence:
+    def __init__(self, name="unknown constraint"):
+        self.name = name
+        self.jobs = None
+        self.resource = None
+
+    def setPrecedence(self, jobs):
+        self.jobs = jobs
+
+    def setImmediate(self, jobs, res):
+        self.jobs = jobs
+        self.resource = res
+
+
+class Model:
+    def __init__(self):
+        self.resource = []
+        self.job = []
+        self.precedence = []
+
+    def addResource(self, res):
+        self.resource.append(res)
+
+    def addJob(self, job):
+        self.job.append(job)
+
+    def addPrecedence(self, pre):
+        self.job.append(pre)
+
+    def optimize(self):
+        print("optimized")

@@ -31,6 +31,57 @@ class Job:
         self.setups = {}
 
 
+def simple_directed_path(job, g_arcs, start_time):
+    target_plus = job
+    target_minus = job
+    path_plus = [job]
+    path_minus = [job]
+    flag = True
+    while flag:
+        flag = False
+        plus_candidate = []
+        plus_start_time = []
+        minus_candidate = []
+        minus_start_time = []
+        back_tracking = []
+
+        for arc in g_arcs:
+            if start_time[arc[0]] == start_time[arc[1]]:
+                back_tracking.append(arc)
+            elif arc[0] == target_plus and arc[1] not in path_plus and arc[1] not in path_minus:
+                plus_candidate.append(arc[1])
+                plus_start_time.append(start_time[arc[1]])
+            elif arc[1] == target_minus and arc[0] not in path_plus and arc[0] not in path_minus:
+                minus_candidate.append(arc[0])
+                minus_start_time.append(start_time[arc[0]])
+
+        if plus_candidate:
+            min_index = plus_start_time.index(min(plus_start_time))
+            path_plus.append(plus_candidate[min_index])
+            target_plus = plus_candidate[min_index]
+            flag = True
+        else:
+            for bt in back_tracking:
+                if bt[0] == target_plus and bt[1] not in path_plus and bt[1] not in path_minus:
+                    path_plus.append(bt[1])
+                    target_plus = bt[1]
+                    flag = True
+
+        if minus_candidate:
+            max_index = minus_start_time.index(max(minus_start_time))
+            path_minus.insert(0, minus_candidate[max_index])
+            target_minus = minus_candidate[max_index]
+            flag = True
+        else:
+            for bt in back_tracking:
+                if bt[1] == target_minus and bt[0] not in path_plus and bt[0] not in path_minus:
+                    path_minus.insert(0, bt[0])
+                    target_minus = bt[0]
+                    flag = True
+
+    return path_minus, path_plus
+
+
 class Model:
     def __init__(self):
         self.resource = {}

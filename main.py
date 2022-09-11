@@ -35,6 +35,7 @@ class Model:
     def __init__(self):
         self.resource = {}
         self.job = {}
+        self.job_list = []
         self.job_by_res = {}
         self.res_by_job = {}
         self.precedence = []
@@ -52,6 +53,7 @@ class Model:
         if job.name not in self.job.keys():
             self.job[job.name] = job
             self.res_by_job[job.name] = []
+            self.job_list.append(job.name)
         else:
             print(f"同じ名前のジョブ({job.name})が存在します")
             return
@@ -102,6 +104,7 @@ class Model:
 
     # 必要なもの
     # ペナルティ値の計算 (m, s) → 数値
+    # strongly connected component の計算
     # 近傍の計算 (m, π) → [(m, π), ...]
     # CONSTRUCT処理 (m, π) → (m, s)
 
@@ -111,15 +114,27 @@ class Model:
         i = 0
         t_bar = 0
         remain_resource = {}
+        resource_user = {}
         immediate_consts = {}
         for rs_key, rs_value in self.resource.items():
             remain_resource[rs_key] = rs_value.max
+            resource_user[rs_key] = [[] for i in rs_value.max]
             immediate_consts[rs_key] = [imm[0: 2] for imm in self.immediate if imm[2] == rs_key]
+
+        G_PRI_arcs = []
+        G_B_arcs = []
 
         step4_flag = False
 
         while i < len(job_list):
             now_job = job_list[i]
+
+            if now_job == "sink":
+                sink = max([value for value in completion_time.values()])
+                start_time["sink"] = sink
+                completion_time["sink"] = sink
+                break
+
             now_mode = mode_list[i]
             precedence = [pre[0] for pre in self.precedence if pre[1] == now_job and pre[0] in completion_time.keys()]
             immediate = [imm[0] for imm in self.immediate if imm[1] == now_job and imm[0] in completion_time.keys()]
@@ -140,6 +155,9 @@ class Model:
             solved = False
             pmj = self.job[now_job].modes[now_mode].duration
 
+            max_limit_immediate_upper = 0
+            immediate_upper_job = None
+
             for res_name in self.res_by_job[now_job]:
                 limit_immediate_upper = 0
                 limit_immediate_lower = "inf"
@@ -154,6 +172,9 @@ class Model:
                             limit_immediate_lower = min(limit_immediate_lower, completion_time[imm[0]] - 1)
                     if imm[1] in start_time.keys():
                         limit_immediate_upper = max(limit_immediate_upper, start_time[imm[1]])
+                        if limit_immediate_upper > max_limit_immediate_upper:
+                            max_limit_immediate_upper = limit_immediate_upper
+                            immediate_upper_job = imm[1]
 
                 if limit_immediate_lower == "inf":
                     limit_immediate_lower = -1
@@ -169,13 +190,25 @@ class Model:
                         T = max(T, t)
                         solved = True
                         break
-                if not solved:
+                    else:
+                        for time in range(len(after)):
+                            if after[time] < 0:
+                                user = resource_user[res_name][t + time]
+                                for us in user:
+                                    if (us, now_job) not in G_PRI_arcs:
+                                        G_PRI_arcs.append((us, now_job))
+                if solved:
+                    if T == max_limit_immediate_upper and immediate_upper_job:
+                        G_PRI_arcs.append((immediate_upper_job, now_job))
+                else:
                     return "failure"
 
             for res_name in self.res_by_job[now_job]:
                 usage = self.job[now_job].modes[now_mode].resource[res_name]
                 after = remain_resource[res_name][T: T + pmj] - usage
                 remain_resource[res_name][T: T + pmj] = after
+                for time in range(T, T + pmj):
+                    resource_user[res_name][time].append(now_job)
                 start_time[now_job] = T
                 completion_time[now_job] = T + pmj
 
@@ -190,12 +223,14 @@ class Model:
                                     i = job_list.index(j_dash)
                                     t_bar = T
                                     index = job_list.index(j_dash)
+                                    G_B_arcs.append((now_job, j_dash))
                                 else:
                                     i = job_list.index(imm[0])
                                     imm_0_mode_name = mode_list[job_list.index(imm[0])]
                                     dur = self.job[imm[0]].modes[imm_0_mode_name].duration
                                     t_bar = start_time[j_dash] + 1 - dur
                                     index = job_list.index(imm[0])
+                                    G_B_arcs.append((j_dash, imm[0]))
 
                                 rest_jobs = job_list[index:]
                                 rest_modes = mode_list[index:]
@@ -207,6 +242,11 @@ class Model:
                                             rest_dur = self.job[rest_j].modes[rest_m].duration
                                             after = remain_resource[res_name][start_rest: start_rest + rest_dur] + usage
                                             remain_resource[res_name][start_rest: start_rest + rest_dur] = after
+                                            for time in range(start_rest, start_rest + rest_dur):
+                                                resource_user[res_name][time].remove(rest_j)
+                                            for arc in G_PRI_arcs:
+                                                if rest_j in arc:
+                                                    G_PRI_arcs.remove(arc)
                                         del start_time[rest_j]
                                         del completion_time[rest_j]
                                 break
@@ -220,4 +260,19 @@ class Model:
                 i += 1
                 step4_flag = True
 
-        return start_time
+        for prd in self.precedence:
+            if completion_time[prd[0]] == start_time[prd[1]]:
+                G_PRI_arcs.append((prd[0], prd[1]))
+        for imd in self.immediate:
+            if completion_time[imd[0]] == start_time[imd[1]]:
+                G_PRI_arcs.append((imd[0], imd[1]))
+
+        G_arcs = list(set(G_PRI_arcs) | set(G_B_arcs))
+
+        return start_time, completion_time, G_arcs
+
+    def PENALTY_for_minimize_makespan(self, completion_time: dict):
+        return completion_time["sink"]
+
+    def MOVE_for_minimize_makespan(self, job_list, mode_list):
+        return "fin"

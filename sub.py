@@ -47,9 +47,6 @@ model.addMode("dummy", dummy_mode)
 sink = Job("sink")
 model.addJob(sink)
 sink_mode = Mode("sink")
-sink_mode.addResource("machine1", np.array([]))
-sink_mode.addResource("machine2", np.array([]))
-sink_mode.addResource("dummy_machine", np.array([]))
 sink_mode.setDuration(0)
 model.addMode("sink", sink_mode)
 
@@ -66,4 +63,4 @@ model.addImmediatePrecedence("setup_job3_1", "job3_1", "machine2")
 job_list = ["setup_job3_1", "job3_1", "dummy", "job1_1", "job2_1", "job3_2", "job1_2", "job2_2", "sink"]
 mode_list = ["setup_mode3_1", "mode3_1", "dummy_mode", "mode1_1", "mode2_1", "mode3_2", "mode1_2", "mode2_2", "sink"]
 
-p = model.CONSTRUCT(job_list=job_list, mode_list=mode_list, max_t=15)
+s, c, g = model.CONSTRUCT(job_list=job_list, mode_list=mode_list, max_t=15)

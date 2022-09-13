@@ -1,7 +1,9 @@
+import time
+
 from main import *
 
 # model
-model = Model()
+model = Model(15)
 
 # resource
 machine1 = Resource("machine1")
@@ -60,12 +62,7 @@ model.addImmediatePrecedence("dummy", "job1_1", "dummy_machine")
 model.addImmediatePrecedence("dummy", "job2_1", "dummy_machine")
 model.addImmediatePrecedence("setup_job3_1", "job3_1", "machine2")
 
-job_list = ["setup_job3_1", "job3_1", "dummy", "job1_1", "job2_1", "job3_2", "job1_2", "job2_2", "sink"]
-mode_list = ["setup_mode3_1", "mode3_1", "dummy_mode", "mode1_1", "mode2_1", "mode3_2", "mode1_2", "mode2_2", "sink"]
-
-s, c, g = model.CONSTRUCT(job_list=job_list, mode_list=mode_list, max_t=15)
-print(g)
-
-path1, path2 = simple_directed_path("job1_1", g, s)
-print(path1)
-print(path2)
+# optimize
+st = time.time()
+model.optimize(100, 3, st)
+print(time.time() - st)

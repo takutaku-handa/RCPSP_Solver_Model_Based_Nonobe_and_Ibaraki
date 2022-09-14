@@ -9,9 +9,9 @@ model = Model(15)
 machine1 = Resource("machine1")
 machine2 = Resource("machine2")
 machine_dummy = Resource("dummy_machine")
-machine1.setMax(np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
-machine2.setMax(np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
-machine_dummy.setMax(np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
+machine1.setMax([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+machine2.setMax([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+machine_dummy.setMax([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 model.addResource(machine1)
 model.addResource(machine2)
 model.addResource(machine_dummy)
@@ -22,9 +22,9 @@ for key, value in jb_dict.items():
     job = Job(f"job{key[0]}_{key[1]}")
     model.addJob(job)
     mode = Mode(f"mode{key[0]}_{key[1]}")
-    mode.addResource(f"machine{value}", np.array([1 for r in range(4 - key[0])]))
+    mode.addResource(f"machine{value}", 1)
     if key == (1, 1) or key == (2, 1):
-        mode.addResource("dummy_machine", np.array([0 for j in range(4 - key[0])]))
+        mode.addResource("dummy_machine", 0)
     mode.setDuration(4 - key[0])
     model.addMode(f"job{key[0]}_{key[1]}", mode)
 
@@ -32,7 +32,7 @@ for key, value in jb_dict.items():
 setup_job = Job("setup_job3_1")
 model.addJob(setup_job)
 setup_mode = Mode("setup_mode3_1")
-setup_mode.addResource("machine2", np.array([1]))
+setup_mode.addResource("machine2", 1)
 setup_mode.setDuration(1)
 model.addMode("setup_job3_1", setup_mode)
 model.setSetupMode("setup_job3_1", None, ["setup_mode3_1"])
@@ -41,7 +41,7 @@ model.setSetupMode("setup_job3_1", None, ["setup_mode3_1"])
 dummy_job = Job("dummy")
 model.addJob(dummy_job)
 dummy_mode = Mode("dummy_mode")
-dummy_mode.addResource("dummy_machine", np.array([]))
+dummy_mode.addResource("dummy_machine", 0)
 dummy_mode.setDuration(0)
 model.addMode("dummy", dummy_mode)
 
@@ -64,5 +64,15 @@ model.addImmediatePrecedence("setup_job3_1", "job3_1", "machine2")
 
 # optimize
 st = time.time()
-model.optimize(100, 3, st)
+model.optimize(100, 0, st)
 print(time.time() - st)
+
+print(model.resource)
+print(model.job)
+print(model.all_precedence)
+
+# あとやること。
+# セットアップジョブのモードを、CONSTRUCTで動的に扱う
+# 近傍にモードの変換を加える
+# 問題の入力を簡単にする
+# タブーリストの長さを調整する技術を学び、実装する

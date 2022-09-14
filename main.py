@@ -1,14 +1,12 @@
 import random
 
-import numpy as np
-
 
 class Resource:
     def __init__(self, name="unknown resource"):
         self.name = name
         self.max = None
 
-    def setMax(self, res_max: np.array):
+    def setMax(self, res_max: list):
         self.max = res_max
 
 
@@ -18,7 +16,7 @@ class Mode:
         self.resource = {}
         self.duration = None
 
-    def addResource(self, name: str, amount: np.array):
+    def addResource(self, name: str, amount: int):
         if name not in self.resource.keys():
             self.resource[name] = amount
 
@@ -32,59 +30,6 @@ class Job:
         self.mode = {}
         self.mode_list = []
         self.setups = {}
-
-
-"""
-def simple_directed_path(job, start_time, g_arcs):
-    target_plus = job
-    target_minus = job
-    path_plus = [job]
-    path_minus = [job]
-    flag = True
-    while flag:
-        flag = False
-        plus_candidate = []
-        plus_start_time = []
-        minus_candidate = []
-        minus_start_time = []
-        back_tracking = []
-
-        for arc in g_arcs:
-            if start_time[arc[0]] == start_time[arc[1]]:
-                back_tracking.append(arc)
-            elif arc[0] == target_plus and arc[1] not in path_plus and arc[1] not in path_minus:
-                plus_candidate.append(arc[1])
-                plus_start_time.append(start_time[arc[1]])
-            elif arc[1] == target_minus and arc[0] not in path_plus and arc[0] not in path_minus:
-                minus_candidate.append(arc[0])
-                minus_start_time.append(start_time[arc[0]])
-
-        if plus_candidate:
-            min_index = plus_start_time.index(min(plus_start_time))
-            path_plus.append(plus_candidate[min_index])
-            target_plus = plus_candidate[min_index]
-            flag = True
-        else:
-            for bt in back_tracking:
-                if bt[0] == target_plus and bt[1] not in path_plus and bt[1] not in path_minus:
-                    path_plus.append(bt[1])
-                    target_plus = bt[1]
-                    flag = True
-
-        if minus_candidate:
-            max_index = minus_start_time.index(max(minus_start_time))
-            path_minus.insert(0, minus_candidate[max_index])
-            target_minus = minus_candidate[max_index]
-            flag = True
-        else:
-            for bt in back_tracking:
-                if bt[1] == target_minus and bt[0] not in path_plus and bt[0] not in path_minus:
-                    path_minus.insert(0, bt[0])
-                    target_minus = bt[0]
-                    flag = True
-
-    return path_minus, path_plus
-"""
 
 
 def all_path_from_g_arcs(g_arcs):
@@ -319,7 +264,7 @@ class Model:
         resource_user = {}
         immediate_consts = {}
         for rs_key, rs_value in self.resource.items():
-            remain_resource[rs_key] = np.array(list(rs_value.max))  # ここをlist()にしないと、remain_resourceとselfが連動してしまう。
+            remain_resource[rs_key] = list(rs_value.max)  # ここをlist()にしないと、remain_resourceとselfが連動してしまう。
             resource_user[rs_key] = [[] for i in rs_value.max]
             immediate_consts[rs_key] = [imm[0: 2] for imm in self.immediate if imm[2] == rs_key]
 
@@ -387,8 +332,9 @@ class Model:
                     t_list = list(range(max(t_bar, limit_immediate_upper), self.max_t))
 
                 for t in t_list:
-                    after = remain_resource[res_name][t: t + pmj] - usage
-                    if np.all(after >= 0):
+                    after = [rere - usage for rere in list(remain_resource[res_name][t: t + pmj])]
+                    bool_after = [True if aft >= 0 else False for aft in after]
+                    if all(bool_after):
                         T = max(T, t)
                         solved = True
                         break
@@ -407,7 +353,7 @@ class Model:
 
             for res_name in self.res_by_job[now_job]:
                 usage = self.job[now_job].mode[now_mode].resource[res_name]
-                after = remain_resource[res_name][T: T + pmj] - usage
+                after = [rere - usage for rere in list(remain_resource[res_name][T: T + pmj])]
                 remain_resource[res_name][T: T + pmj] = after
                 for time in range(T, T + pmj):
                     resource_user[res_name][time].append(now_job)
@@ -441,7 +387,8 @@ class Model:
                                             usage = self.job[rest_j].mode[rest_m].resource[res_name]
                                             start_rest = start_time[rest_j]
                                             rest_dur = self.job[rest_j].mode[rest_m].duration
-                                            after = remain_resource[res_name][start_rest: start_rest + rest_dur] + usage
+                                            after = [rere + usage for rere in
+                                                     list(remain_resource[res_name][start_rest: start_rest + rest_dur])]
                                             remain_resource[res_name][start_rest: start_rest + rest_dur] = after
                                             for time in range(start_rest, start_rest + rest_dur):
                                                 resource_user[res_name][time].remove(rest_j)

@@ -81,8 +81,10 @@ def PENALTY_for_minimize_makespan(completion_time: dict):
 
 
 class Model:
-    def __init__(self, max_t):
-        self.max_t = max_t
+    def __init__(self):
+        self.max_t = None
+        self.max_trial = None
+        self.tabu_length = None
         self.resource = {}
         self.job = {}
         self.job_list = []
@@ -95,6 +97,15 @@ class Model:
         self.jobs_to_go = {}
         self.strongly_connected_components = []
         self.all_precedence = []
+
+    def setMax_t(self, max_t: int):
+        self.max_t = max_t
+
+    def setMax_trial(self, max_trial: int):
+        self.max_trial = max_trial
+
+    def setTabu_length(self, tabu_length: int):
+        self.tabu_length = tabu_length
 
     def addResource(self, res: Resource):
         if res.name not in self.resource.keys():
@@ -497,7 +508,7 @@ class Model:
                     break
         return ret
 
-    def optimize(self, max_trial, tabu_length, random_seed):
+    def optimize(self, random_seed):
         self.__defAllPrecedence()
         random.seed(random_seed)
 
@@ -517,7 +528,7 @@ class Model:
         tabu_list = []
 
         num = 0
-        while num < max_trial:
+        while num < self.max_trial:
             jl, ml, pena, ga, atr_jb = self.__MOVE_for_minimize_makespan(job_list, mode_dict, g_arcs, tabu_list)
             if pena == "inf":
                 break
@@ -528,7 +539,7 @@ class Model:
                 optimal_penalty = pena
             g_arcs = ga
             tabu_list.insert(0, atr_jb)
-            if len(tabu_list) > tabu_length:
+            if len(tabu_list) > self.tabu_length:
                 tabu_list.remove(tabu_list[-1])
             num += 1
 

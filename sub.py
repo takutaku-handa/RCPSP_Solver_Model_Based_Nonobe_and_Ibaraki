@@ -3,7 +3,7 @@ import time
 from main import *
 
 # model
-model = Model(15)
+model = Model()
 
 # resource
 machine1 = Resource("machine1")
@@ -63,13 +63,12 @@ model.addImmediatePrecedence("dummy", "job2_1", "dummy_machine")
 model.addImmediatePrecedence("setup_job3_1", "job3_1", "machine2")
 
 # optimize
+model.setMax_t(15)
+model.setMax_trial(1000)
+model.setTabu_length(3)
 st = time.time()
-model.optimize(100, 0, st)
+model.optimize(st)
 print(time.time() - st)
-
-print(model.resource)
-print(model.job)
-print(model.all_precedence)
 
 # あとやること。
 # セットアップジョブのモードを、CONSTRUCTで動的に扱う

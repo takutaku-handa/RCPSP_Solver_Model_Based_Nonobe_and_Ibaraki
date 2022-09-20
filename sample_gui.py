@@ -286,7 +286,8 @@ class Application(tk.Frame):
             self.showMode(event=None)
         else:
             target_mode = self.optimize_model.job[self.target_job].mode[mode_name]
-            target_mode.addResource(self.mode_entry_1.get(), int(self.mode_entry_2.get()))
+            self.optimize_model.addResource_to_Mode(self.target_job, target_mode.name, self.mode_entry_1.get(),
+                                                    int(self.mode_entry_2.get()))
             detail_text = f"name: {target_mode.name} ,   duration: {str(target_mode.duration)}\nresource"
             for res, amount in target_mode.resource.items():
                 detail_text += f"\n{res}        {amount}"

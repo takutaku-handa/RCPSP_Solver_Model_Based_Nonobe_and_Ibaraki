@@ -145,6 +145,20 @@ class Model:
             print(f"同じ名前のモード({mode.name})が存在します")
             return
 
+    def addResource_to_Mode(self, job_name: str, mode_name: str, resource_name: str, amount: int):
+        job = self.job[job_name]
+        if mode_name in job.mode.keys():
+            if resource_name not in self.resource.keys():
+                print(f"モード({mode_name}に含まれる({resource_name})という資源は、このモデルに存在しません")
+                return
+            mode = job.mode[mode_name]
+            if resource_name not in mode.resource.keys():
+                mode.resource[resource_name] = amount
+                jbr = self.job_by_res[resource_name]
+                jbr.append(job_name)
+                rbj = self.res_by_job[job_name]
+                rbj.append(resource_name)
+
     def setSetupMode(self, job_name: str, predecessor_name, mode_list: list[str]):
         job = self.job[job_name]
         for md in mode_list:
